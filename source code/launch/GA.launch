@@ -1,0 +1,5 @@
+<launch>
+        <param name="/use_sim_time" value="true" />
+        <rosparam command="load" file="$(find des_mubot)/config/GA_param.yaml" />
+        <node pkg="des_mubot" name="mubot_learning" type="start_GA_vary.py" output="screen"/>
+</launch>

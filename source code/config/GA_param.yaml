@@ -1,0 +1,15 @@
+mubot: #namespace
+        
+        # GA Parameters
+        n_trial:       1
+        n_evaluation:  3
+        n_parent:      4
+        n_child:       4
+
+        # Robot Parameters
+        max_sim_time:       4
+        duration:           1
+        actuator_number:    2
+
+
+
