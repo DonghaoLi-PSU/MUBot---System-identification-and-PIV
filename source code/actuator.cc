@@ -5,43 +5,6 @@
  *
  * Created by Donghao Li
  * Update time: March 23rd 2021
- *
- * This file merges what used to be three near-duplicate plugin source
- * files -- actuator_2.cc, actuator_4.cc, actuator_6.cc -- differing only
- * in the number of actuators (NoA) and the "AN2"/"AN4"/"AN6" substring in
- * the voltage-table filename, into a single implementation. NoA is now
- * read at Load() time from an SDF <num_actuators> plugin parameter.
- *
- * Fixes applied relative to the original actuator_x.cc files:
- *  1. The per-tick voltage-table and spring-parameter CSV reads are gone.
- *     The original code re-opened "vol_AN{N}_high.csv" from the start and
- *     re-scanned forward to the current line on EVERY physics tick --
- *     since the target line grows every tick, this was O(T^2) total work
- *     over a simulation run, not O(T). Both files are now read once in
- *     Load() into in-memory tables and indexed directly (O(1) per tick).
- *  2. File opens are checked and CSV rows/columns are validated, with a
- *     clear std::runtime_error instead of silently running with whatever
- *     was left in a partially-populated array.
- *  3. Resulting joint torque is sanitized and clamped (scaled to each
- *     joint's own parent/child moment of inertia) before SetForce(),
- *     mirroring the wrench-clamp added to Hydro.cc. Previously only the
- *     input voltage was clamped, not the torque actually applied.
- *  4. Per-segment arrays are sized to s_num (a runtime value here) instead
- *     of a bare "[10]".
- *  5. NoA/hp_num-style triplication across three files is gone; NoA=2/4/6
- *     select validated CSV formats within one file.
- *
- * ACTION REQUIRED: as with Hydro.cc, the model's URDF/SDF <plugin> block
- * must be updated to point at this merged library and pass the actuator
- * count, e.g.:
- *
- *     <plugin name="actuator_plugin" filename="libActuatorPlugin.so">
- *         <num_actuators>4</num_actuators>
- *     </plugin>
- *
- * and CMakeLists.txt must build/install a single "ActuatorPlugin" target
- * instead of three. Neither file was present in the project files
- * available here, so those two changes are not made in this pass.
  */
 #ifndef __GAZEBO_ACTUATOR_PLUGIN_HH__
 #define __GAZEBO_ACTUATOR_PLUGIN_HH__
