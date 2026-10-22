@@ -35,8 +35,6 @@ class Hydro : public ModelPlugin
   {
     public: Hydro(){};
 
-    /// Fix #4: robust sign function. Returns 0.0 (instead of NaN/inf) when
-    /// |v| is at/below eps, so callers never need to divide by v directly.
     private: static double Sgn(double v, double eps = 1E-08)
     {
         if (!std::isfinite(v) || std::fabs(v) <= eps) return 0.0;
@@ -102,7 +100,6 @@ class Hydro : public ModelPlugin
             }
         }
 
-        // Cache links once instead of re-fetching every tick.
         const auto model_links = this->model->GetLinks();
         if (static_cast<int>(model_links.size()) < s_num) {
             throw std::runtime_error("[Hydro] Model has " + to_string(model_links.size()) +
@@ -127,7 +124,7 @@ class Hydro : public ModelPlugin
         else if (i == s_num - 1) {                       // Tail
             C_d = fabs(Param[3]); C_a = fabs(Param[4]); C_p = fabs(Param[5]);
         }
-        else if (NoA == 2) {                              // NoA==2: single "body" group (not group 2/3 -- see note above)
+        else if (NoA == 2) {                              // NoA==2: single "body" group 
             C_d = fabs(Param[6]); C_a = fabs(Param[7]); C_p = 0.0;
         }
         else if (i == 1) {                                // First actuator segment

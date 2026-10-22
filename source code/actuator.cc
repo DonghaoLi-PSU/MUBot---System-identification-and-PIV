@@ -31,12 +31,6 @@ namespace gazebo
     {
         public: ActuatorPlugin(){};
 
-        /// Fix #5-equivalent: clamp a raw joint torque to a bound scaled by
-        /// that joint's own parent/child moment of inertia, so a transient
-        /// (e.g. from a spike in pos[]/vel[]) can't inject an unbounded
-        /// torque into the ODE integrator. Non-finite input is sanitized
-        /// to 0 rather than propagated. Same MAX_ANG_ACCEL bound used for
-        /// the equivalent clamp in Hydro.cc, for consistency.
         private: static double ClampTorque(const physics::JointPtr& joint, double raw)
         {
             if (!std::isfinite(raw)) return 0.0;
@@ -61,21 +55,11 @@ namespace gazebo
             return raw;
         }
 
-        /// NoA/s_num are runtime values (set once in Load() from the SDF
-        /// parameter) instead of being baked in per source file.
         private: int NoA   = 4;
         private: int s_num = NoA + 2;
 
-        /// Fix #1: joints are resolved from the model once at Load() time
-        /// and cached here, instead of calling GetJoints()[i] again on
-        /// every single physics tick inside OnUpdate().
         private: std::vector<physics::JointPtr> joint;
-
-        /// Fix #1: the full recorded voltage waveform is loaded once here,
-        /// one row per timestep of the recording, s_num-2 columns per row.
         private: std::vector<std::vector<double>> voltage_table;
-
-        /// Fix #1: spring-stiffness ratios, loaded once (NoA+1 values).
         private: std::vector<double> stiff_co;
 
         public: virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
@@ -92,7 +76,6 @@ namespace gazebo
             }
             this->s_num = NoA + 2;
 
-            // Cache joints once instead of re-fetching every tick.
             const auto model_joints = this->model->GetJoints();
             if (static_cast<int>(model_joints.size()) < s_num) {
                 throw std::runtime_error("[Actuator] Model has " + to_string(model_joints.size()) +
@@ -116,10 +99,6 @@ namespace gazebo
             this->updateConnection = event::Events::ConnectWorldUpdateBegin(boost::bind(&ActuatorPlugin::OnUpdate, this));
         }
         public: virtual void Init(){};
-
-        /// Fix #1/#2: reads the entire recorded voltage waveform once. Each
-        /// row has s_num-2 columns (one per active actuator joint), same
-        /// format as the original per-tick read, just done a single time.
         private: void Load_Voltage_Table(const std::string& path)
         {
             ifstream in(path, ios::in);
@@ -155,7 +134,6 @@ namespace gazebo
             }
         }
 
-        /// Fix #1/#2: reads the single-line spring-stiffness-ratio CSV once.
         private: void Load_Spring_Params(const std::string& path)
         {
             ifstream in(path, ios::in);
@@ -198,10 +176,6 @@ namespace gazebo
             std::vector<double> torque_spring(s_num, 0.0);      const double spring_stiff = 5.328E-03;     const double tail_stiff = 33.73E-03;   // Spring state
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////// Dynamic Process
-            // Fix #1: no more per-tick file I/O -- index directly into the
-            // table loaded once in Load(). If we've run past the end of the
-            // recorded signal, hold at zero voltage (same fallback behavior
-            // as the original EOF handling, without the string-building).
             if (line_indicator >= 0 && line_indicator < static_cast<int>(voltage_table.size())) {
                 voltage = voltage_table[line_indicator];
             }
